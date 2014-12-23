@@ -49,6 +49,12 @@ describe('Scope', function() {
     }));
   });
 
+  describe('$skipChildWatchers', function() {
+    it('should initially be false', inject(function($rootScope) {
+      expect($rootScope.$skipChildWatchers).toBeDefined();
+      expect($rootScope.$skipChildWatchers).toEqual(false);
+    }));
+  });
 
   describe('this', function() {
     it('should evaluate \'this\' to be the scope', inject(function($rootScope) {
@@ -458,6 +464,59 @@ describe('Scope', function() {
       expect(log).toEqual([]);
     }));
 
+    it('should $digest scope marked $skipChildWatchers to true, but not its children.',
+        inject(function ($rootScope) {
+      var log = '',
+          parent = $rootScope.$new(),
+          childA = parent.$new(),
+          childB = parent.$new();
+
+      parent.$watch(function(){ log += 'a';});
+      childA.$watch(function(){ log += 'b';});
+      childB.$watch(function(){ log += 'c';});
+      parent.$skipChildWatchers = true;
+
+      $rootScope.$digest();
+      expect(log).toEqual('aa');
+    }));
+
+    it('should $digest children after parent\'s $skipChildWatchers is set back to false',
+      inject(function ($rootScope) {
+        var log = '',
+          parent = $rootScope.$new(),
+          childA = parent.$new(),
+          childB = parent.$new();
+
+        parent.$watch(function(){ log+='a'});
+        childA.$watch('a', function(v){
+            $rootScope.b = v;
+            log += 'b'
+        });
+        childB.$watch('b', function(v){
+            $rootScope.c = v;
+            log += 'c'
+        });
+
+        $rootScope.$digest();
+        expect(log).toEqual('abca');
+
+        log = '';
+        parent.a = 1;
+        parent.$skipChildWatchers = true;
+
+        $rootScope.$digest();
+        expect(log).toEqual('a');
+        expect($rootScope.b).toBeUndefined();
+        expect($rootScope.c).toBeUndefined();
+
+        log = '';
+        parent.$skipChildWatchers = false;
+
+        $rootScope.$digest();
+        expect(log).toEqual('abca');
+        expect($rootScope.b).toEqual(1);
+        expect($rootScope.c).toEqual(1);
+      }));
 
     describe('$watch deregistration', function() {
 

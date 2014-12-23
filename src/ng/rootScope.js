@@ -136,6 +136,7 @@ function $RootScopeProvider() {
       this.$$listeners = {};
       this.$$listenerCount = {};
       this.$$isolateBindings = null;
+      this.$skipChildWatchers = false;
     }
 
     /**
@@ -160,6 +161,14 @@ function $RootScopeProvider() {
        *
        * @description
        * Reference to the root scope.
+       */
+
+      /**
+       * @ngdoc property
+       * @name $rootScope.Scope#$skipChildWatchers
+       *
+       * @description
+       * If set to true, $digest loop bypasses this scope's children
        */
 
     Scope.prototype = {
@@ -794,7 +803,7 @@ function $RootScopeProvider() {
             // Insanity Warning: scope depth-first traversal
             // yes, this code is a bit crazy, but it works and we have tests to prove it!
             // this piece should be kept in sync with the traversal in $broadcast
-            if (!(next = (current.$$childHead ||
+            if (!(next = ((!current.$skipChildWatchers && current.$$childHead) ||
                 (current !== target && current.$$nextSibling)))) {
               while (current !== target && !(next = current.$$nextSibling)) {
                 current = current.$parent;
